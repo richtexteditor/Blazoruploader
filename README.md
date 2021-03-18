@@ -9,7 +9,7 @@ To run this application, you need to first clone the `blazor-file-upload-image-p
 
 * Now, run the run the project Visual Studio and able to get the output in Browser.
 
-##Overview
+## Overview
 
 The [Blazor File Upload](https://www.syncfusion.com/blazor-components/blazor-file-upload?utm_source=github&utm_medium=listing&utm_campaign=blazor-file-upload-github-samples) is a component for uploading one or multiple files, images, documents, and audio and video files to a server. The File Upload works in both WebAssembly and Server-side Blazor apps, and also supports a rich set of features that include multiple file selection, progress bars, auto-uploading, drag and drop, folder (directory) uploading, file validation, and more.
 
