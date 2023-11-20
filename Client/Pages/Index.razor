@@ -1,0 +1,155 @@
+﻿@page "/"
+
+@using Syncfusion.Blazor.Inputs
+@using System.IO
+@using UploadImagePreview.Client.Model;
+@inject IJSRuntime JSRuntime;
+@inject HttpClient Http
+<div class="d-flex justify-content-center align-items-center container ">
+    <EditForm Model="@userDetails" OnValidSubmit="@Submit">
+        <DataAnnotationsValidator />
+        <h2 class="h3 mb-3 font-weight-normal">Art Competition Entry Form</h2>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label>First Name :</label>
+                <SfTextBox @bind-Value="@userDetails.FirstName"></SfTextBox>
+                <ValidationMessage For="@(() => userDetails.FirstName)"></ValidationMessage>
+            </div>
+            <div class="form-group col-md-4">
+                <label>Last Name :</label>
+                <SfTextBox @bind-Value="@userDetails.LastName"></SfTextBox>
+                <ValidationMessage For="@(() => userDetails.LastName)"></ValidationMessage>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-10">
+                <label class="col-form-label">Email ID :</label>
+                <SfTextBox @bind-Value="@userDetails.Email"></SfTextBox>
+                <ValidationMessage For="@(() => userDetails.Email)"></ValidationMessage>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-10 control-section">
+                <label class="col-form-label">Upload Image:</label>
+                <SfUploader ID="UploadFiles" AllowedExtensions=".png,.jpeg,.jpg">
+                    <UploaderEvents ValueChange="onChange" OnRemove="onRemove"></UploaderEvents>
+                    <UploaderTemplates>
+                        <Template Context="HttpContext">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <img class="upload-image" alt="Preview Image @(HttpContext.Name)"
+                                             src="@(files.Count >0 ? files.Where(item=>item.Name == HttpContext.Name)?.FirstOrDefault()?.Path : string.Empty)">
+                                    </td>
+                                    <td>
+                                        <div style="padding: 7px;">
+                                            <h5 title="@(HttpContext.Name)">@(HttpContext.Name)</h5>
+                                            <i>@(HttpContext.Size) Bytes</i>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                            <span class="e-icons e-file-remove-btn remove" id="removeIcon" title="Remove"></span>
+                            <span class="e-upload-icon e-icons e-file-remove-btn" title="Upload" id="iconUpload" @onclick="@uploadFile"></span>
+                        </Template>
+                    </UploaderTemplates>
+                </SfUploader>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-10">
+                <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private UserDetails userDetails = new UserDetails();
+    public MultipartFormDataContent content;
+    public string responseStr;
+    public HttpResponseMessage filepath { get; set; }
+    List<fileInfo> files = new List<fileInfo>();
+
+    public class fileInfo
+    {
+        public string Path { get; set; }
+        public string Name { get; set; }
+        public double Size { get; set; }
+    }
+
+    public void onChange(UploadChangeEventArgs args)
+    {
+        files = new List<fileInfo>();
+        foreach (var file in args.Files)
+        {
+            var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), "Images");
+            var fullPath = Path.Combine(pathToSave, file.FileInfo.Name);
+            byte[] bytes = file.Stream.ToArray();
+            string base64 = Convert.ToBase64String(bytes);
+            files.Add(new fileInfo() { Path = @"data:image/" + file.FileInfo.Type + ";base64," + base64, Name = file.FileInfo.Name, Size = file.FileInfo.Size });
+            content = new MultipartFormDataContent {
+                    { new ByteArrayContent(file.Stream.GetBuffer()), "\"upload\"", file.FileInfo.Name }
+                };
+
+        }
+    }
+    public void onRemove(RemovingEventArgs args)
+    {
+        foreach (var removeFile in args.FilesData)
+        {
+            if (File.Exists(Path.Combine(@"\Images", removeFile.Name)))
+            {
+                File.Delete(Path.Combine(@"\Images\", removeFile.Name));
+            }
+        }
+    }
+    public async Task uploadFile(MouseEventArgs args)
+    {
+        filepath = await Http.PostAsync("https://localhost:44395/api/SampleData/Save", content);
+        this.responseStr = await filepath.Content.ReadAsStringAsync();
+    }
+    public void Submit()
+    {
+
+    }
+}
+
+<style>
+    .control_wrapper {
+        width: 450px;
+        margin: auto;
+    }
+
+    @@font-face {
+        font-family: 'Uploader_Icon';
+        src: url(data:application/x-font-ttf;charset=utf-8;base64,AAEAAAAKAIAAAwAgT1MvMj1tSfIAAAEoAAAAVmNtYXDnEOdVAAABiAAAADZnbHlmoZcPvgAAAcgAAABAaGVhZBLQTSUAAADQAAAANmhoZWEINQQDAAAArAAAACRobXR4CAAAAAAAAYAAAAAIbG9jYQAgAAAAAAHAAAAABm1heHABDgAdAAABCAAAACBuYW1lQySinQAAAggAAAIxcG9zdLfl0usAAAQ8AAAAMgABAAAEAAAAAFwEAAAAAAAD2AABAAAAAAAAAAAAAAAAAAAAAgABAAAAAQAA2vKJUF8PPPUACwQAAAAAANftBBgAAAAA1+0EGAAAAAAD2AP4AAAACAACAAAAAAAAAAEAAAACABEAAgAAAAAAAgAAAAoACgAAAP8AAAAAAAAAAQQAAZAABQAAAokCzAAAAI8CiQLMAAAB6wAyAQgAAAIABQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUGZFZABA5wDnAAQAAAAAXAQAAAAAAAABAAAAAAAABAAAAAQAAAAAAAACAAAAAwAAABQAAwABAAAAFAAEACIAAAAEAAQAAQAA5wD//wAA5wD//wAAAAEABAAAAAEAAAAAAAAAIAAAAAIAAAAAA9gD+AAHABAAADchESMVITUjEzM3ETMRFzMBKAOwPvzMPp1mtUC1Zv7FCAF6vb0BO7X+EAHwtQE7AAAAABIA3gABAAAAAAAAAAEAAAABAAAAAAABAAgAAQABAAAAAAACAAcACQABAAAAAAADAAgAEAABAAAAAAAEAAgAGAABAAAAAAAFAAsAIAABAAAAAAAGAAgAKwABAAAAAAAKACwAMwABAAAAAAALABIAXwADAAEECQAAAAIAcQADAAEECQABABAAcwADAAEECQACAA4AgwADAAEECQADABAAkQADAAEECQAEABAAoQADAAEECQAFABYAsQADAAEECQAGABAAxwADAAEECQAKAFgA1wADAAEECQALACQBLyBVcGxvYWRlclJlZ3VsYXJVcGxvYWRlclVwbG9hZGVyVmVyc2lvbiAxLjBVcGxvYWRlckZvbnQgZ2VuZXJhdGVkIHVzaW5nIFN5bmNmdXNpb24gTWV0cm8gU3R1ZGlvd3d3LnN5bmNmdXNpb24uY29tACAAVQBwAGwAbwBhAGQAZQByAFIAZQBnAHUAbABhAHIAVQBwAGwAbwBhAGQAZQByAFUAcABsAG8AYQBkAGUAcgBWAGUAcgBzAGkAbwBuACAAMQAuADAAVQBwAGwAbwBhAGQAZQByAEYAbwBuAHQAIABnAGUAbgBlAHIAYQB0AGUAZAAgAHUAcwBpAG4AZwAgAFMAeQBuAGMAZgB1AHMAaQBvAG4AIABNAGUAdAByAG8AIABTAHQAdQBkAGkAbwB3AHcAdwAuAHMAeQBuAGMAZgB1AHMAaQBvAG4ALgBjAG8AbQAAAAACAAAAAAAAAAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIBAgEDAAhVcGxvYWRlcgAAAAA=) format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    .e-upload .e-upload-files .e-icons.e-upload-icon {
+        font-family: 'Uploader_Icon';
+        speak: none;
+        font-size: 16px;
+        right: 35px;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+        .e-upload .e-upload-files .e-icons.e-upload-icon::before {
+            content: '\e700';
+        }
+
+    .upload-image {
+        width: 150px;
+        height: 150px;
+        display: inline-flex;
+        background-size: contain;
+        margin: 7px;
+        text-align: center;
+        line-height: 10;
+        border-radius: 5px;
+    }
+</style>
