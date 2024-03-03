@@ -26,7 +26,7 @@ For ASP.NET Web Forms applications, please use [ Ajax uploader](https://ajaxuplo
 The [Richscripts Inc](https://blazoruploader.com/aboutus.aspx) is a Canadian company established in 2003, specializing in building high quality, reusable web components and enterprise class software solutions. Richscripts has more than 33,000+ customers and more than 1 million users, including large financial institutions, Fortune 500 companies, and global IT consultancies.
 
  
-The Leading Live Chat, Rich Text Editor, Upload component.
+The Leading Live Chat, Rich Text Editor, Upload component.<br/><br/>
 [Ajax Uploader](http://ajaxuploader.com/) <br/><br/>
 [PHP File Uploader](https://phpfileuploader.com/) <br/><br/>
 [ASP Uploader](https://aspuploader.com/) <br/><br/>
@@ -38,7 +38,7 @@ The Leading Live Chat, Rich Text Editor, Upload component.
 [Dchat - Free, Simple Video Chat](https://dchat.com/) <br/><br/>
 [Rich Text Editor for PHP](https://phphtmleditor.com/) <br/><br/>
 [Rich Text Editor for Classic ASP](https://asp.richtexteditor.com/) <br/><br/>
-[Cute Chat - ASP.NET chat](https://richscripts.com/ASP.NET+Chat/ <br/><br/>
+[Cute Chat - ASP.NET chat](https://richscripts.com/ASP.NET+Chat/) <br/><br/>
 [Cute live support](https://richscripts.com/live-support/) <br/><br/>
 [Web Messenger for ASP.NET](https://richscripts.com/web-messenger/) <br/><br/>
 
