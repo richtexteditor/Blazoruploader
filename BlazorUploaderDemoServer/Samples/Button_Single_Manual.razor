@@ -1,0 +1,218 @@
+﻿@page "/button_single_manual"
+
+<PageTitle>Button_Single_Manual.razor</PageTitle>
+
+<h1>Button_Single_Manual.razor</h1>
+
+<p>This sample demonstrates how to start uploading manually after file selection vs automatically.</p>
+
+@{
+	//the upload button only bind once when Uploader init .
+	string btncss = "";
+	if (uploadstarted) btncss = "display:none";
+}
+
+@if (uploadstarted)
+{
+	<button @onclick="CancelUpload">Uploading, click to cancel</button>
+}
+
+<BlazorUploader.CoreUploader UploaderEvent="HandleUploaderEvent">
+
+	<button style="@btncss">Browse a file to upload</button>
+
+</BlazorUploader.CoreUploader>
+
+
+
+@if (allfiles.Count != 0)
+{
+	 <View_General_Uploading_List Items="allfiles" ItemCancelled="StateHasChanged" />
+
+	<pre>@currentaction</pre>
+}
+
+<br />
+<br />
+<br />
+
+@{
+	var file = allfiles.FirstOrDefault(v => v.UserCancelled == false);
+}
+@if (uploadstarted)
+{
+	<button disabled>Submit Form</button>
+	<span>Uploading</span>
+
+}
+else if (file == null)
+{
+	<button disabled>Submit Form</button>
+	<span>Please browser a file before submitting form.</span>
+}
+else
+{
+	<button @onclick="SubmitForm">Submit Form</button>
+}
+
+<div>@formsubmitedmsg</div>
+
+@code {
+
+	List<BlazorUploader.UploaderFile> allfiles = new List<BlazorUploader.UploaderFile>();
+	bool uploadstarted = false;
+	string currentaction = "";
+
+	void HandleUploaderEvent(BlazorUploader.UploaderEvent eventData)
+	{
+		if (eventData.FilesError.Length != 0)
+		{
+			// file has been rejected for MaxSizeKB/AcceptMimeTypes/AcceptExtensions etc..
+			// developer shall show error , or ignore it.
+		}
+		if (eventData.FilesAdded.Length != 0)
+		{
+			HandleFilesAdded(eventData.FilesAdded);
+		}
+	}
+
+	void HandleFilesAdded(BlazorUploader.UploaderFile[] files)
+	{
+		//do not accept new files when uploadstarted
+		if (uploadstarted)
+			return;
+
+		//In this demo , only save last file
+		allfiles.Clear();
+		allfiles.Add(files.Last());
+
+		StateHasChanged();
+	}
+
+	void CancelUpload()
+	{
+		foreach (var f in allfiles)
+			f.UserCancelled = true;
+		allfiles.Clear();
+	}
+
+	string formsubmitedcss = "";
+	string formsubmitedmsg = "";
+	void SubmitForm()
+	{
+		var file = allfiles.FirstOrDefault(v => v.UserCancelled == false);
+		if (file != null && file.UserTotalReadSize == file.FileSize)
+		{
+			formsubmitedcss = "color:blue";
+			formsubmitedmsg = "Demo: " + file.FileName + " has been uploaded to server : " + file.UserTempFilePath;
+		}
+		else
+		{
+			formsubmitedcss = "color:red";
+			if (uploadstarted)
+			{
+				formsubmitedmsg = "Uploading, please wait";
+			}
+			else if (file == null)
+			{
+				formsubmitedmsg = "Require file";
+			}
+			else
+			{
+				uploadstarted = true;
+				formsubmitedmsg = "Start upload..";
+				Task tsk = ProcessFilesAsync();
+				//Note , blazor need TaskContinuationOptions.ExecuteSynchronously to let ContinueWith run in the correct thread context
+				tsk.ContinueWith(delegate
+				{
+					SubmitForm();
+					StateHasChanged();
+				}, TaskContinuationOptions.ExecuteSynchronously);
+			}
+		}
+	}
+
+	async Task ProcessFilesAsync()
+	{
+		System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+
+		byte[] buffer = BlazorUploader.CoreUploader.CreateBuffer();
+
+		try
+		{
+			for (int i = 0; i < allfiles.Count; i++)
+			{
+				var f = allfiles[i];
+				if (f.UserCancelled || f.UserTotalReadSize == f.FileSize)
+					continue;
+
+				currentaction = "read " + f.FileName;
+				StateHasChanged();
+
+				using Stream s = f.OpenReadOnlyStream();
+
+				DateTime updatetime = DateTime.Now;
+
+				f.UserTotalReadSize = 0;
+				f.UserReadStartTime = DateTime.Now;
+				f.UserTempFilePath = Program.GetTempFileName(f.Uploader.UniqueId, f.FileId);
+
+				try
+				{
+					using Stream fs = File.OpenWrite(f.UserTempFilePath);
+
+					while (true)
+					{
+						sw.Restart();
+
+						int rc = await s.ReadAsync(buffer, 0, buffer.Length);
+
+						if (rc == 0)
+							break;
+
+						if (f.UserCancelled)
+							break;
+
+						await fs.WriteAsync(buffer, 0, rc);
+
+						TimeSpan latency = sw.Elapsed;
+						if (f.UserMaxReadLatency < latency) f.UserMaxReadLatency = latency;
+
+						f.UserTotalReadSize += rc;
+						f.UserTotalReadTimeSpan += latency;
+						f.UserTotalReadTimes++;
+
+						if (DateTime.Now - updatetime > TimeSpan.FromSeconds(0.2))
+						{
+							currentaction = "read " + f.FileName + " " + f.UserTotalReadSize;
+							StateHasChanged();
+							updatetime = DateTime.Now;
+						}
+
+					}
+				}
+				catch (Exception)
+				{
+					try { File.Delete(f.UserTempFilePath); } catch { }
+					throw;
+				}
+
+				if (f.UserCancelled)
+				{
+					try { File.Delete(f.UserTempFilePath); } catch { }
+				}
+			}
+
+			currentaction = "All Done";
+		}
+		catch (Exception x)
+		{
+			currentaction = "Error " + x.ToString();
+		}
+		finally
+		{
+			uploadstarted = false;
+		}
+		StateHasChanged();
+	}
+}

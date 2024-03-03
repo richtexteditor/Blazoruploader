@@ -1,0 +1,89 @@
+﻿@if (Items != null)
+{
+	<table style="margin:20px 2px;width:100%;" class="table-bordered">
+		<tr style="background-color:steelblue;color:white">
+			<td>Id</td>
+			<td>Name</td>
+			<td style="text-align:right">Size</td>
+			<td style="text-align:right">Uploaded</td>
+			<td style="text-align:right">Latency</td>
+			<td style="text-align:right">Speed</td>
+			<td style="text-align:right">Status</td>
+			<td style="text-align:center;width:300px;">progress</td>
+			<td>remove</td>
+		</tr>
+		@foreach (var f in Items)
+		{
+			if (f.UserCancelled)
+				continue;
+
+			void DoCancelFile()
+			{ 
+				f.UserCancelled = true;
+				ItemCancelled.InvokeAsync(f);
+			}
+
+
+			string width = "0";
+			if (f.FileSize > 0) width = (f.UserTotalReadSize * 100) / f.FileSize + "%";
+
+			<tr>
+				<td>@f.FileId</td>
+				<td>@f.FileName</td>
+				<td style="text-align:right">@(f.FileSize / 1024 / 1024)MB</td>
+				<td style="text-align:right">@(f.UserTotalReadSize / 1024 / 1024)MB</td>
+				<td style="text-align:right">
+					@if (f.UserTotalReadTimes > 0)
+					{
+						@((f.UserTotalReadTimeSpan.TotalMilliseconds / f.UserTotalReadTimes).ToString("0"))
+						<span>/</span>
+						@(f.UserMaxReadLatency.TotalMilliseconds.ToString("0"))
+						<span> ms</span>
+					}
+				</td>
+				<td style="text-align:right">
+					@if (f.UserTotalReadTimeSpan.TotalMilliseconds > 0)
+					{
+						double kbps = f.UserTotalReadSize / f.UserTotalReadTimeSpan.TotalSeconds / 1024;
+						if (kbps > 10000)
+						{
+							@((kbps / 1024).ToString("0 MB/s"))
+						}
+						else
+						{
+							@(kbps.ToString("0 KB/s"))
+						}
+					}
+				</td>
+				<td style="text-align:right">
+					@if (f.FileSize == 0)
+					{
+						<span>(empty)</span>
+					}
+					else
+					{
+						@(f.UserTotalReadSize * 100 / f.FileSize)
+						<span>%</span>
+					}
+				</td>
+				<td style="background-color:#fff;">
+					<div style="background-color:green;width:@width;height:100%;overflow:hidden">.</div>
+				</td>
+				<td><button @onclick="DoCancelFile">remove</button></td>
+			</tr>
+
+		}
+	</table>
+
+}
+
+
+@code {
+
+	[Parameter]
+	public IReadOnlyList<BlazorUploader.UploaderFile> Items { get; set; }
+
+	[Parameter]
+	public EventCallback<BlazorUploader.UploaderFile> ItemCancelled{ get; set; }
+
+}

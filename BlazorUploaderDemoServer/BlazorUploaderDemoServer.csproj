@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="BlazorUploader.demo.lic" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="BlazorUploader.demo.lic" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="BlazorUploader">
+      <HintPath>..\BlazorUploader.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
